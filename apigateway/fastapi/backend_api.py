@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+import os, secrets
+from fastapi import (Depends, Header, HTTPException)
 
 app = FastAPI(
     title = "BACKEND API en español",
@@ -14,8 +16,8 @@ if not INTERNAL_GATEWAY_SECRET:
         "INTERNAL_GATEWAY_SECRET no esta configurado"
     )
 
-def verify gateway(
-    x_gateway_secret = str = Headers(default="")
+def verify_gateway(
+    x_gateway_secret : str = Header(default="")
 ):
     valid = secrets.compare_digest(
         x_gateway_secret,
@@ -56,6 +58,7 @@ def productos(
             {"id": 2, "nombre": "nombre del producto 2", "precio":0}
         ]
     }
+)
     
 @app.get(
     "/ordenes",
@@ -72,5 +75,4 @@ def ordenes(
             {"id":1002, "estado": "pendiente"}
         ]
     }
-    
-    
+)

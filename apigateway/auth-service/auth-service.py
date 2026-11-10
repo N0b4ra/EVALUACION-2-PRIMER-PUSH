@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import os
 import secrets
-
+import bcrypt
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 
@@ -12,30 +12,33 @@ app = FastAPI(
 
 USERS = {
     "ana": {
-        "password": "1234",
+        "password_hash": "$2b$12$jKD9sxF5OUdFsecmotxorOs7IGR6K/ZUEPzufH.IRp5SenAhNSbNW",
         "user_id": "USR-001",
         "roles": ["user"]
     },
     "pedro": {
-        "password": "5678",
+        "password_hash": "$2b$12$FJPVsDF85VEf56ofVk3wjO3LWkduTaOVGCHUEa0n.g/XDYZzReUG6",
         "user_id": "USR-002",
         "roles": ["user"]
     },
     "ernesto": {
-        "password": "admin123",
+        "password_hash": "$2b$12$CYVtiT11BPRUbYwa9Gc5Mea57DgFRqU5YbX3Q9I0fFquAn.IbgnSS",
         "user_id": "USR-003",
         "roles": ["user","admin"]
     },        
 }
+
+def verificar_password(password: str, password_hash: str) -> bool:
+    return bcrypt.checkpw(password.encode(), password_hash.encode())
 
 SESSIONS = {}
 
 TOKEN_LIFETIME_MINUTES = 15
 
 AUTH_INTROSPECTION_SECRET = os.getenv(
-    "AUTH_INTROSPECTION_SECRET",
-    "demo-instrospection-secret" # gateway-auth-secret-789
-)
+    "AUTH_INTROSPECTION_SECRET")
+if not AUTH_INTROSPECTION_SECRET:
+    raise RuntimeError("AUTH_INTROSPECTION_SECRET no está configurado")
 
 class LoginRequest(BaseModel):
     username: str
@@ -59,7 +62,7 @@ def login(request: LoginRequest,
     if user is None:
         raise HTTPException(
             status_code=401,
-            detail="Usuario incorrecto"
+            detail="Credenciales incorrectas"
         )
     if user["password"] != request.password:
         raise HTTPException(

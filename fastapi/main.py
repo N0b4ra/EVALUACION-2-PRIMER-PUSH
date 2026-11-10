@@ -8,7 +8,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from contextlib import asynccontextmanager
 
-MONGODB_URI = "mongodb://localhost:27017"
+import os
+import re
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = "web_tarea"
 COLL_NAME = "items"
 
@@ -66,7 +68,7 @@ async def listar_items(
 ):
     query = {}
     if q:
-        query["nombre"] = {"$regex": q, "$options": "i"}
+        query["nombre"] = {"$regex": re.escape(q), "$options": "i"}
     cursor = coll.find(query).skip(skip).limit(limit)
     items: List[ItemOut] = []
     async for doc in cursor:
@@ -80,7 +82,7 @@ async def crear_item(item: ItemIn):
     return doc_to_itemout(doc)
 
 
-@app.get("/items/{item_id}", response_model=ItemOut, status_code=201)
+@app.get("/items/{item_id}", response_model=ItemOut)
 async def get_item(item_id: str):
     if not ObjectId.is_valid(item_id):
         raise HTTPException(400, "id invalido")

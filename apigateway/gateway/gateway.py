@@ -8,7 +8,7 @@ from fastapi import (
 import httpx
 import os
 import secrets
-
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 app = FastAPI(title= "Local API Gateway")
 
@@ -33,10 +33,10 @@ if not VAULT_TOKEN:
 
 #Obtener Secretos
 
-async get_gateway_secrets():
+async def get_gateway_secrets():
     url = (
         f"{VAULT_ADDR}"
-        "/vl/secret/data/gateway"
+        "/v1/secret/data/gateway"
     )
     headers = {
         "X-Vault-Token":VAULT_TOKEN
@@ -49,10 +49,10 @@ async get_gateway_secrets():
             url,
             headers=headers
         )
-        if response.status.code != 200:
-            rasie HTTPException(
+        if response.status_code != 200:
+            raise HTTPException(
                 status_code = 500,
-                detailt="No fue posible acceder a vault"
+                detail="No fue posible acceder a vault"
             )
         vault_response = response.json()
         return vault_response[
@@ -82,21 +82,21 @@ async def authenticate_client(
         credentials.credentials
     )
     
-    valid = secrets.compare.digest(
+    valid = secrets.compare_digest(
         recieved_token,
         expected_token
     )
     if not valid:
         raise HTTPException(
             status_code = 401,
-            detailt = "Token Invalido"
+            detail = "Token Invalido"
         )
-    return (
+    return {
         "client_id": "student-client",
         "backend_secret": vault_secrets[
             "backend_shared_secret"
         ]
-    )
+    }
 
 # http://localhost:8000/api/productos
 #@app.get("/api/productos")
@@ -147,10 +147,10 @@ async def proxy(
             auth["client_id"]
     }
     
-    content_type = request.headers.get(
+    content-type = request.headers.get(
         "content-type"
     )
-    if content_type:
+    if content-type:
         gateway_headers[
             "content_type"
         ] = content_type

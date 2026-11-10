@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
+
 
 const {ApolloServer, gql} = require('apollo-server-express');
 const Usuario = require('./models/usuarios');
@@ -10,7 +12,6 @@ const typeDefs = gql`
   type Usuario{
     id: ID!
     nombre: String!
-    pass: String!
   }
   input UsuarioInput{
     nombre: String!
@@ -52,14 +53,17 @@ const resolvers = {
     },
     Mutation: {
         async addUsuario(obj, {input}){
-            const usuario = new Usuario(input);
+            const passHash = await bcrypt.hash(input.pass, 10);
+            const usuario = new Usuario({ nombre: input.nombre, passHash });
             await usuario.save();
             return usuario;
         },
         async updUsuario(obj, {id, input}){
-            const usuario = await Usuario.findByIdAndUpdate(id, input);
-            return usuario;
-        },
+            const passHash = await bcrypt.hash(input.pass, 10);
+            return usuario.findByIdAndUpdate(id, { nombre: input.nombre, passHash }, 
+            {new: true}
+            );  
+           },
         async delUsuario(obj, {id}){
             await Usuario.deleteOne({_id: id});
             return {
